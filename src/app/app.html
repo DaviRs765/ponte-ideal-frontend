@@ -1,170 +1,393 @@
-<header class="bg-white dark:bg-gray-900 border-b border-gray-100 dark:border-gray-800 sticky top-0 z-40 shadow-sm transition-colors duration-300">
+<!-- ========================================================================= -->
+<!-- HEADER PRINCIPAL -->
+<!-- ========================================================================= -->
+<header [class]="tipoUsuarioLogado === 'empresa' ? 'bg-cyan-50 dark:bg-sky-900 border-cyan-100' : (tipoUsuarioLogado === 'admin' ? 'bg-red-50 dark:bg-red-900 border-red-200' : 'bg-white dark:bg-gray-900 border-gray-100 dark:border-gray-800')" class="border-b sticky top-0 z-40 shadow-sm transition-colors duration-500">
   <div class="flex justify-between items-center py-4 px-4 md:px-8 max-w-7xl mx-auto">
     <div (click)="voltarParaHome()" class="cursor-pointer flex items-center">
-      <img src="assets/logo.png" alt="Ponte Ideal" class="h-12 object-contain hidden md:block" onerror="this.outerHTML='<span class=\'text-2xl font-extrabold text-blue-600 dark:text-blue-400 tracking-tight\'>Ponte <span class=\'text-purple-500\'>Ideal</span></span>'">
-      <span class="md:hidden text-2xl font-extrabold text-blue-600 dark:text-blue-400 tracking-tight">Ponte <span class="text-purple-500">Ideal</span></span>
+      <span class="text-2xl font-extrabold text-blue-600 dark:text-blue-400 tracking-tight">Ponte <span class="text-purple-500">Ideal</span></span>
     </div>
+    
     <nav class="hidden md:flex items-center gap-6 text-sm font-medium">
-      <button (click)="abrirModalLogin()" class="text-gray-500 dark:text-gray-300 hover:text-purple-500 transition">Entrar / Cadastrar</button>
-      <button (click)="abrirModalAnuncio()" class="bg-gradient-to-r from-blue-600 to-purple-600 text-white px-5 py-2.5 rounded-md hover:opacity-90 transition shadow-sm">Anunciar Serviço</button>
-      <button (click)="abrirSobre()" class="text-gray-500 dark:text-gray-300 hover:text-purple-500 transition">Sobre</button>
+      @if (!usuarioLogado) {
+        <button (click)="abrirModalLogin()" class="text-gray-500 dark:text-gray-300 hover:text-purple-500 font-bold transition">Entrar / Cadastrar</button>
+      } @else {
+        <div class="flex items-center gap-4 bg-gray-100 dark:bg-gray-800 px-4 py-1.5 rounded-full border shadow-sm">
+          <div class="relative cursor-pointer hover:bg-gray-200 dark:hover:bg-gray-700 p-2 rounded-full transition" (click)="abrirNotificacoes()">
+            <span class="text-lg">🔔</span>
+            @if (notificacoesNaoLidas > 0) {
+              <span class="absolute top-0 right-0 bg-red-500 text-white text-[10px] font-black w-4 h-4 rounded-full flex items-center justify-center">{{ notificacoesNaoLidas }}</span>
+            }
+          </div>
+          <span [class]="tipoUsuarioLogado === 'admin' ? 'text-red-600 font-black' : 'text-purple-600'" class="font-bold cursor-pointer hover:underline" (click)="abrirPerfilPublico(usuarioIdLogado!)">
+            {{ tipoUsuarioLogado === 'admin' ? '👑 Admin' : 'Olá, ' + usuarioLogado.split(' ')[0] }}
+          </span>
+          @if (tipoUsuarioLogado === 'admin') { 
+            <button (click)="abrirAdmin()" class="text-red-600 font-black flex items-center gap-1">🛡️ Suporte</button> 
+          } @else { 
+            <button (click)="abrirGerenciamento()" class="text-gray-600 hover:text-blue-500 font-bold flex items-center gap-1">⚙️ Meu Painel</button> 
+          }
+          <span class="text-gray-300">|</span>
+          <button (click)="fazerLogout()" class="text-gray-400 hover:text-red-500 font-bold">Sair</button>
+        </div>
+      }
+      
+      @if (tipoUsuarioLogado === 'empresa') { 
+        <button (click)="abrirModalVaga()" class="bg-gradient-to-r from-cyan-500 to-blue-600 text-white px-5 py-2.5 rounded-md font-bold shadow-sm">Anunciar Vaga</button> 
+      } @else if (tipoUsuarioLogado === 'prestador') { 
+        <button (click)="abrirModalAnuncio()" class="bg-gradient-to-r from-blue-600 to-purple-600 text-white px-5 py-2.5 rounded-md font-bold shadow-sm">Anunciar Serviço</button> 
+      }
     </nav>
-    <button (click)="toggleMenuMobile()" class="md:hidden text-gray-600 dark:text-gray-300 text-2xl focus:outline-none">☰</button>
   </div>
 </header>
 
-@if (menuMobileAberto) {
-  <div class="md:hidden flex flex-col bg-gray-50 dark:bg-gray-800 px-6 py-4 gap-4 border-t border-gray-100 dark:border-gray-700 shadow-inner">
-    <button (click)="abrirModalLogin()" class="text-left text-gray-700 dark:text-gray-200 font-bold py-2 border-b border-gray-200 dark:border-gray-700">Entrar na Conta</button>
-    <button (click)="abrirModalAnuncio()" class="bg-gradient-to-r from-blue-600 to-purple-600 text-white px-4 py-3 rounded-md font-bold text-center mt-2 shadow-sm">Anunciar Serviço</button>
-  </div>
-}
-
-@if (!itemSelecionado) {
-  <main class="relative bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-gray-900 dark:to-indigo-950 min-h-[400px] md:min-h-[500px] flex flex-col items-center justify-center px-4 py-10 transition-colors duration-300 border-b border-gray-200 dark:border-gray-800">
-    <div class="absolute inset-0 overflow-hidden pointer-events-none"><div class="absolute -top-24 -right-24 w-96 h-96 bg-purple-500 opacity-10 dark:opacity-20 rounded-full blur-3xl"></div></div>
-    
-    <h1 class="relative z-10 text-4xl md:text-5xl font-extrabold text-gray-900 dark:text-white text-center mb-4 leading-tight">Encontre serviços <span class="text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-purple-500">únicos</span> e <br class="hidden md:block" /> especializados</h1>
-    
-    <p class="relative z-10 text-gray-600 dark:text-gray-300 mb-10 text-center text-sm md:text-lg max-w-2xl font-medium tracking-wide uppercase">
-      Conectando você ao seu próximo projeto
-    </p>
-
-    <div class="relative z-10 w-full max-w-2xl flex bg-white dark:bg-gray-800 rounded-xl shadow-xl overflow-hidden flex-col md:flex-row border border-gray-100 dark:border-gray-700">
-      <input type="text" [(ngModel)]="termoBusca" placeholder="Ex: Eletricista, Design..." class="flex-grow px-6 py-4 md:py-5 outline-none text-gray-700 dark:text-gray-100 dark:bg-gray-800 w-full bg-transparent">
-      <button class="bg-blue-600 text-white px-10 py-4 md:py-5 font-bold hover:bg-blue-700 transition w-full md:w-auto uppercase tracking-wide">Buscar</button>
+<!-- ========================================================================= -->
+<!-- TELAS PRINCIPAIS (CONTROLE DE FLUXO) -->
+<!-- ========================================================================= -->
+@if (modoAdmin) {
+  <!-- MODO ADMIN -->
+  <div class="bg-red-50 dark:bg-gray-900 min-h-screen pb-16">
+    <div class="bg-red-600 border-b border-red-700 py-10 shadow-lg">
+      <div class="max-w-7xl mx-auto px-8">
+        <h1 class="text-4xl font-black text-white mb-4">🛡️ Central de Administração</h1>
+        <div class="flex gap-4">
+          <button (click)="abaAdmin = 'usuarios'" [class]="abaAdmin === 'usuarios' ? 'bg-white text-red-600' : 'bg-red-800 text-white'" class="px-6 py-2 rounded-lg font-bold transition">Gerenciar Usuários</button>
+          <button (click)="abaAdmin = 'anuncios'" [class]="abaAdmin === 'anuncios' ? 'bg-white text-red-600' : 'bg-red-800 text-white'" class="px-6 py-2 rounded-lg font-bold transition">Moderar Anúncios</button>
+        </div>
+      </div>
     </div>
-  </main>
+    
+    <div class="max-w-7xl mx-auto px-8 py-10">
+      @if (abaAdmin === 'usuarios') {
+        <h2 class="text-2xl font-bold dark:text-white mb-6 border-b border-red-200 dark:border-gray-700 pb-4">Usuários do Sistema</h2>
+        <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-xl overflow-hidden">
+          <table class="w-full text-left">
+            <thead class="bg-red-100 dark:bg-gray-700 text-red-800 dark:text-red-200">
+              <tr><th class="p-4 font-black">ID</th><th class="p-4 font-black">Nome</th><th class="p-4 font-black">E-mail</th><th class="p-4 font-black">Tipo</th><th class="p-4 font-black text-right">Ações</th></tr>
+            </thead>
+            <tbody>
+              @for (u of usuariosAdmin; track u.id) {
+                <tr class="border-b dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition">
+                  <td class="p-4 font-bold dark:text-white">#{{ u.id }}</td>
+                  <td class="p-4 dark:text-gray-300">{{ u.nome }}</td>
+                  <td class="p-4 dark:text-gray-300">{{ u.email }}</td>
+                  <td class="p-4"><span class="px-2 py-1 rounded text-xs font-bold bg-gray-200 text-gray-700 uppercase">{{ u.tipo }}</span></td>
+                  <td class="p-4 text-right"><button (click)="banirUsuario(u.id)" class="bg-red-600 text-white font-bold px-4 py-1.5 rounded hover:bg-red-700 shadow">Banir Conta</button></td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+      } @else {
+        <h2 class="text-2xl font-bold dark:text-white mb-6 border-b border-red-200 dark:border-gray-700 pb-4">Moderação de Anúncios</h2>
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+          @for (s of listaServicos; track s.id) { 
+            <div class="bg-white dark:bg-gray-800 rounded-xl shadow border border-red-100 overflow-hidden">
+              <div class="h-32 bg-gray-200 relative"><img [src]="s.imagem" class="w-full h-full object-cover"></div>
+              <div class="p-4">
+                <h3 class="font-bold truncate dark:text-white">{{ s.titulo }}</h3>
+                <p class="text-xs text-gray-500 mt-1">Autor ID: {{ s.usuario_id }}</p>
+                <button (click)="excluirAnuncioAdmin(s.id, 'servico')" class="w-full mt-4 bg-red-100 text-red-700 font-bold py-2 rounded hover:bg-red-200">Apagar Anúncio</button>
+              </div>
+            </div> 
+          }
+          @for (v of listaVagas; track v.id) { 
+            <div class="bg-white dark:bg-gray-800 rounded-xl shadow border border-red-100 overflow-hidden">
+              <div class="h-32 bg-gray-200 relative"><img [src]="v.imagem" class="w-full h-full object-cover"></div>
+              <div class="p-4">
+                <h3 class="font-bold truncate dark:text-white">{{ v.titulo }}</h3>
+                <p class="text-xs text-gray-500 mt-1">Empresa ID: {{ v.usuario_id }}</p>
+                <button (click)="excluirAnuncioAdmin(v.id, 'vaga')" class="w-full mt-4 bg-red-100 text-red-700 font-bold py-2 rounded hover:bg-red-200">Apagar Anúncio</button>
+              </div>
+            </div> 
+          }
+        </div>
+      }
+    </div>
+  </div>
 
-  <div class="bg-white dark:bg-gray-900 transition-colors duration-300">
-    <section class="max-w-7xl mx-auto px-4 md:px-8 py-12 md:py-16">
-      <div class="flex justify-center mb-8 md:mb-12 overflow-x-auto">
-        <div class="inline-flex bg-gray-100 dark:bg-gray-800 rounded-lg p-1 whitespace-nowrap shadow-inner">
-          <button (click)="mudarAba('servicos')" [class]="abaAtiva === 'servicos' ? 'bg-white dark:bg-gray-700 shadow-sm text-purple-600 dark:text-purple-400' : 'text-gray-500 dark:text-gray-400'" class="px-6 md:px-8 py-2.5 rounded-md font-bold transition-all text-sm md:text-base">Serviços (Freelancers)</button>
-          <button (click)="mudarAba('vagas')" [class]="abaAtiva === 'vagas' ? 'bg-white dark:bg-gray-700 shadow-sm text-purple-600 dark:text-purple-400' : 'text-gray-500 dark:text-gray-400'" class="px-6 md:px-8 py-2.5 rounded-md font-bold transition-all text-sm md:text-base">Vagas (Empresas)</button>
+} @else if (perfilPublicoAtivo) {
+  <!-- PERFIL PÚBLICO -->
+  <div class="bg-gray-50 dark:bg-gray-900 min-h-screen pb-16">
+    <div class="h-64 bg-gradient-to-r from-blue-600 to-purple-700 relative w-full"></div>
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 -mt-24 relative z-10">
+      
+      <div class="bg-white dark:bg-gray-800 rounded-3xl shadow-xl p-8 flex flex-col md:flex-row items-center md:items-start gap-8 mb-10">
+        <img [src]="perfilPublicoAtivo.foto_perfil || 'https://ui-avatars.com/api/?name=' + perfilPublicoAtivo.nome + '&background=random&size=200'" class="w-40 h-40 rounded-full object-cover border-4 border-white shadow-md bg-white">
+        <div class="flex-grow text-center md:text-left">
+          <h1 class="text-4xl font-black text-gray-900 dark:text-white mb-2">{{ perfilPublicoAtivo.nome }}</h1>
+          <span class="bg-gray-100 text-gray-600 px-3 py-1 rounded-full text-sm font-bold uppercase tracking-wider">{{ perfilPublicoAtivo.tipo }}</span>
+          <p class="text-gray-600 dark:text-gray-300 mt-4 whitespace-pre-line text-lg">{{ perfilPublicoAtivo.bio || 'Este usuário ainda não adicionou uma biografia.' }}</p>
         </div>
       </div>
 
-      <h2 class="text-2xl font-bold text-gray-800 dark:text-white mb-6 md:mb-8 border-l-4 border-purple-600 pl-3">{{ abaAtiva === 'servicos' ? 'Serviços Disponíveis' : 'Vagas Abertas' }}</h2>
+      <div class="grid grid-cols-1 lg:grid-cols-3 gap-10">
+        <div class="lg:col-span-2">
+          <h2 class="text-2xl font-black text-gray-900 dark:text-white mb-6 border-b border-gray-200 pb-2">Anúncios Ativos</h2>
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            @for (post of perfilPublicoAtivo.posts; track post.id) {
+              <div (click)="abrirDetalhes(post, perfilPublicoAtivo.tipo === 'empresa' ? 'vaga' : 'servico')" class="bg-white dark:bg-gray-800 rounded-xl shadow border border-gray-200 cursor-pointer hover:-translate-y-1 transition overflow-hidden relative">
+                <button (click)="toggleFavorito(post, perfilPublicoAtivo.tipo === 'empresa' ? 'vaga' : 'servico', $event)" class="absolute top-2 right-2 z-20 text-2xl drop-shadow-md hover:scale-110 transition">
+                  {{ isFavorito(post.id, perfilPublicoAtivo.tipo === 'empresa' ? 'vaga' : 'servico') ? '❤️' : '🤍' }}
+                </button>
+                <div class="h-40 bg-gray-200"><img [src]="post.imagem" class="w-full h-full object-cover"></div>
+                <div class="p-5">
+                  <h3 class="font-bold text-lg dark:text-white">{{ post.titulo }}</h3>
+                  <p class="font-black text-blue-600 mt-2">{{ post.preco || post.pagamento }}</p>
+                </div>
+              </div>
+            } @empty { 
+              <p class="text-gray-500 italic bg-white p-6 rounded-xl border col-span-full text-center">Nenhum anúncio ativo no momento.</p> 
+            }
+          </div>
+        </div>
+        <div class="lg:col-span-1">
+          <h2 class="text-2xl font-black text-gray-900 dark:text-white mb-6 border-b border-gray-200 pb-2">Avaliações Recebidas</h2>
+          <div class="flex flex-col gap-4">
+            @for (av of avaliacoesPerfilPublico; track av.id) {
+              <div class="bg-white dark:bg-gray-800 p-5 rounded-xl shadow-sm border border-gray-200">
+                <p class="text-yellow-500 font-bold text-sm mb-3 border-b border-gray-100 pb-2">{{ gerarEstrelas(av.nota) }}<br><span class="text-gray-500 text-xs font-medium uppercase truncate block mt-1">Ref: {{ av.servico_titulo }}</span></p>
+                <div class="flex gap-3 items-start">
+                  <img [src]="av.autor_foto || 'https://ui-avatars.com/api/?name=' + av.autor_nome + '&background=random&color=fff'" class="w-10 h-10 rounded-full object-cover shadow-sm border">
+                  <div>
+                    <p class="font-bold text-sm dark:text-white">{{ av.autor_nome }}</p>
+                    <p class="text-sm text-gray-600 mt-1">{{ av.comentario }}</p>
+                  </div>
+                </div>
+              </div>
+            } @empty { 
+              <p class="text-gray-500 italic bg-white p-6 rounded-xl border text-center">Nenhuma avaliação.</p> 
+            }
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
 
+} @else if (modoGerenciamento) {
+  <!-- PAINEL DE CONTROLE -->
+  <div class="bg-gray-50 dark:bg-gray-900 min-h-screen pb-16">
+    <div class="bg-white border-b py-8 shadow-sm dark:bg-gray-800 dark:border-gray-700">
+      <div class="max-w-7xl mx-auto px-8">
+        <h1 class="text-3xl font-black dark:text-white mb-4">Seu Painel de Controle</h1>
+        <div class="flex gap-4 overflow-x-auto pb-2">
+          <button (click)="abaPainel = 'dashboard'" [class]="abaPainel === 'dashboard' ? 'bg-blue-600 text-white' : 'bg-gray-200 text-gray-700'" class="px-6 py-2 rounded-lg font-bold transition whitespace-nowrap">📊 Métricas</button>
+          <button (click)="abaPainel = 'anuncios'" [class]="abaPainel === 'anuncios' ? 'bg-blue-600 text-white' : 'bg-gray-200 text-gray-700'" class="px-6 py-2 rounded-lg font-bold transition whitespace-nowrap">Meus Anúncios</button>
+          <button (click)="abaPainel = 'favoritos'" [class]="abaPainel === 'favoritos' ? 'bg-blue-600 text-white' : 'bg-gray-200 text-gray-700'" class="px-6 py-2 rounded-lg font-bold transition whitespace-nowrap">❤️ Favoritos</button>
+          <button (click)="abaPainel = 'perfil'" [class]="abaPainel === 'perfil' ? 'bg-blue-600 text-white' : 'bg-gray-200 text-gray-700'" class="px-6 py-2 rounded-lg font-bold transition whitespace-nowrap">Editar Perfil</button>
+        </div>
+      </div>
+    </div>
+
+    @if (abaPainel === 'dashboard') {
+      <div class="max-w-7xl mx-auto px-8 py-10">
+        <h2 class="text-2xl font-bold dark:text-white mb-8 border-b dark:border-gray-700 pb-4">Resumo do seu Desempenho</h2>
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <div class="bg-white dark:bg-gray-800 p-8 rounded-3xl shadow-lg border border-gray-100 dark:border-gray-700 text-center transform hover:scale-105 transition">
+            <div class="text-5xl mb-4">📢</div><h3 class="text-gray-500 font-bold uppercase tracking-wider text-sm mb-2">Anúncios Ativos</h3>
+            <p class="text-5xl font-black text-gray-900 dark:text-white">{{ metricas.total_anuncios }}</p>
+          </div>
+          <div class="bg-gradient-to-br from-purple-600 to-blue-600 p-8 rounded-3xl shadow-lg text-center text-white transform hover:scale-105 transition">
+            <div class="text-5xl mb-4">✉️</div><h3 class="font-bold uppercase tracking-wider text-sm opacity-80 mb-2">Mensagens Recebidas</h3>
+            <p class="text-5xl font-black">{{ metricas.total_interacoes }}</p>
+          </div>
+          <div class="bg-white dark:bg-gray-800 p-8 rounded-3xl shadow-lg border border-gray-100 dark:border-gray-700 text-center transform hover:scale-105 transition">
+            <div class="text-5xl mb-4">❤️</div><h3 class="text-gray-500 font-bold uppercase tracking-wider text-sm mb-2">Vezes Favoritado</h3>
+            <p class="text-5xl font-black text-red-500">{{ metricas.total_favoritos }}</p>
+          </div>
+        </div>
+      </div>
+    } @else if (abaPainel === 'anuncios') {
+      <div class="max-w-7xl mx-auto px-8 py-10">
+        <div class="flex justify-between items-center mb-8 pb-4 border-b dark:border-gray-700">
+          <h2 class="text-2xl font-bold dark:text-white">{{ tipoUsuarioLogado === 'empresa' ? 'Minhas Vagas' : 'Meus Serviços' }}</h2>
+          @if (tipoUsuarioLogado === 'empresa') { 
+            <button (click)="abrirModalVaga()" class="bg-cyan-600 text-white px-4 py-2 rounded-lg font-bold shadow">+ Nova Vaga</button> 
+          } @else { 
+            <button (click)="abrirModalAnuncio()" class="bg-purple-600 text-white px-4 py-2 rounded-lg font-bold shadow">+ Novo Serviço</button> 
+          }
+        </div>
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          @if (tipoUsuarioLogado === 'prestador') {
+            @for (servico of meusServicos; track servico.id) {
+              <div class="bg-white rounded-xl shadow-sm border flex flex-col" [class.opacity-60]="servico.status === 'pausado'">
+                <div class="h-32 relative">
+                  <img [src]="servico.imagem" class="w-full h-full object-cover">
+                  <div class="absolute top-2 right-2 text-white text-xs font-bold px-2 py-1 rounded" [class.bg-green-500]="servico.status !== 'pausado'" [class.bg-red-500]="servico.status === 'pausado'">{{ servico.status === 'pausado' ? 'Pausado' : 'Ativo' }}</div>
+                </div>
+                <div class="p-5 flex-grow">
+                  <h3 class="font-bold text-lg mb-1">{{ servico.titulo }}</h3>
+                  <p class="font-black text-purple-600 mb-4">{{ servico.preco }}</p>
+                  <button (click)="abrirOrcamentos(servico)" class="w-full bg-purple-100 text-purple-800 font-bold py-2 rounded-lg text-sm hover:bg-purple-200">📩 Ver Orçamentos</button>
+                </div>
+                <div class="p-4 border-t flex gap-2">
+                  <button (click)="alternarStatusServico(servico)" class="w-1/3 bg-gray-200 text-xs font-bold rounded py-2">Status</button>
+                  <button (click)="abrirModalAnuncio(servico)" class="w-1/3 border text-xs font-bold rounded py-2">Editar</button>
+                  <button (click)="excluirServico(servico.id)" class="w-1/3 bg-red-50 text-red-600 font-bold py-2 rounded">Excluir</button>
+                </div>
+              </div>
+            }
+          } @else {
+            @for (vaga of minhasVagas; track vaga.id) {
+              <div class="bg-white rounded-xl shadow-sm border flex flex-col" [class.opacity-60]="vaga.status === 'preenchida'">
+                <div class="h-32 relative">
+                  <img [src]="vaga.imagem" class="w-full h-full object-cover">
+                  <div class="absolute top-2 right-2 text-white text-xs font-bold px-2 py-1 rounded" [class.bg-blue-500]="vaga.status !== 'preenchida'" [class.bg-gray-600]="vaga.status === 'preenchida'">{{ vaga.status === 'preenchida' ? 'Preenchida' : 'Aberta' }}</div>
+                </div>
+                <div class="p-5 flex-grow">
+                  <h3 class="font-bold text-lg mb-1">{{ vaga.titulo }}</h3>
+                  <button (click)="abrirCandidatos(vaga)" class="w-full mt-2 bg-cyan-100 text-cyan-800 font-bold py-2 rounded-lg text-sm hover:bg-cyan-200">📋 Ver Candidatos</button>
+                </div>
+                <div class="p-4 border-t flex gap-2">
+                  <button (click)="alternarStatusVaga(vaga)" class="w-1/3 bg-gray-200 text-xs font-bold rounded py-2">Status</button>
+                  <button (click)="abrirModalVaga(vaga)" class="w-1/3 border text-xs font-bold rounded py-2">Editar</button>
+                  <button (click)="excluirVaga(vaga.id)" class="w-1/3 bg-red-50 text-red-600 font-bold py-2 rounded">Excluir</button>
+                </div>
+              </div>
+            }
+          }
+        </div>
+      </div>
+    } @else if (abaPainel === 'favoritos') {
+      <div class="max-w-7xl mx-auto px-8 py-10">
+        <h2 class="text-2xl font-bold dark:text-white mb-8 border-b dark:border-gray-700 pb-4">Itens Salvos ❤️</h2>
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+          @for (fav of meusFavoritosRenderizados; track fav.id) {
+            <div (click)="abrirDetalhes(fav, fav._tipo)" class="bg-white rounded-xl shadow-sm border cursor-pointer hover:shadow-lg transition relative">
+              <button (click)="toggleFavorito(fav, fav._tipo, $event)" class="absolute top-2 right-2 z-20 text-2xl drop-shadow-md hover:scale-110 transition">❤️</button>
+              <div class="h-40 bg-gray-200"><img [src]="fav.imagem" class="w-full h-full object-cover"></div>
+              <div class="p-5">
+                <h3 class="font-bold text-lg">{{ fav.titulo }}</h3>
+                <p [class]="fav._tipo === 'servico' ? 'text-purple-600' : 'text-cyan-600'" class="font-black mt-2">{{ fav.preco || fav.pagamento }}</p>
+              </div>
+            </div>
+          } @empty {
+            <p class="text-gray-500 text-lg col-span-full font-bold">Você não favoritou nenhum item ainda.</p>
+          }
+        </div>
+      </div>
+    } @else {
+      <div class="max-w-3xl mx-auto px-8 py-10">
+        <div class="bg-white dark:bg-gray-800 p-8 rounded-2xl shadow border dark:border-gray-700">
+          <h2 class="text-2xl font-black mb-6 dark:text-white">Seu Perfil Público</h2>
+          <label class="block font-bold mb-2 text-sm">Link da Foto de Perfil</label>
+          <input type="text" [(ngModel)]="dadosMeuPerfil.foto_perfil" class="w-full p-3 border rounded-xl mb-4 bg-gray-50">
+          <label class="block font-bold mb-2 text-sm">Biografia</label>
+          <textarea [(ngModel)]="dadosMeuPerfil.bio" class="w-full h-32 p-3 border rounded-xl mb-4 bg-gray-50"></textarea>
+          <button (click)="salvarMeuPerfil()" class="w-full bg-blue-600 text-white font-bold py-4 rounded-xl shadow-lg">Salvar Alterações</button>
+        </div>
+      </div>
+    }
+  </div>
+
+} @else if (!itemSelecionado) {
+  <!-- HOME COM FILTROS -->
+  <main [class]="tipoUsuarioLogado === 'empresa' ? 'bg-gradient-to-r from-cyan-50 to-blue-50' : 'bg-gradient-to-r from-blue-50 to-indigo-50'" class="relative min-h-[400px] flex flex-col items-center justify-center px-4 py-10 border-b">
+    <h1 class="relative z-10 text-4xl md:text-5xl font-extrabold text-gray-900 text-center mb-4">Encontre {{ tipoUsuarioLogado === 'empresa' ? 'talentos' : 'serviços' }} <span class="text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-purple-500">únicos</span></h1>
+    <div class="relative z-10 w-full max-w-4xl bg-white rounded-2xl shadow-2xl overflow-hidden mt-6 flex flex-col md:flex-row p-2 gap-2">
+      <input type="text" [(ngModel)]="termoBusca" placeholder="Buscar por título..." class="flex-grow px-4 py-3 outline-none font-medium bg-gray-50 rounded-xl">
+      <select [(ngModel)]="filtroCategoria" class="px-4 py-3 outline-none font-bold bg-gray-50 rounded-xl cursor-pointer">
+        <option value="">Todas as Categorias</option>
+        @for(cat of listaCategorias; track cat) { <option [value]="cat">{{cat}}</option> }
+      </select>
+      @if (abaAtiva === 'servicos') {
+        <select [(ngModel)]="filtroFormato" class="px-4 py-3 outline-none font-bold bg-gray-50 rounded-xl cursor-pointer">
+          <option value="">Qualquer Formato</option>
+          <option value="Presencial">Presencial</option>
+          <option value="Digital">Digital</option>
+        </select>
+      }
+      <button class="bg-blue-600 text-white px-8 py-3 rounded-xl font-black hover:bg-blue-700 transition">Filtrar</button>
+    </div>
+  </main>
+  
+  <div class="bg-white py-12">
+    <section class="max-w-7xl mx-auto px-4 md:px-8">
+      <div class="flex justify-center mb-12">
+        <div class="inline-flex bg-gray-100 rounded-lg p-1">
+          <button (click)="mudarAba('servicos')" [class]="abaAtiva === 'servicos' ? 'bg-white shadow text-purple-600' : 'text-gray-500'" class="px-8 py-2.5 rounded-md font-bold">Serviços</button>
+          <button (click)="mudarAba('vagas')" [class]="abaAtiva === 'vagas' ? 'bg-white shadow text-cyan-600' : 'text-gray-500'" class="px-8 py-2.5 rounded-md font-bold">Vagas</button>
+        </div>
+      </div>
+      
       <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         @if (abaAtiva === 'servicos') {
           @for (servico of servicosFiltrados; track servico.id) {
-            <div (click)="abrirDetalhes(servico, 'servico')" class="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden cursor-pointer hover:shadow-lg transform hover:-translate-y-1 transition-all">
-              <!-- AJUSTADO AQUI: h-36 no celular, h-48 no PC -->
-              <div class="h-36 md:h-48 bg-gray-200 dark:bg-gray-700"><img [src]="servico.imagem" class="w-full h-full object-cover"></div>
+            <div class="bg-white rounded-xl shadow-sm border cursor-pointer hover:shadow-lg transition relative">
+              <button (click)="toggleFavorito(servico, 'servico', $event)" class="absolute top-2 right-2 z-20 text-2xl drop-shadow-md hover:scale-110 transition">
+                {{ isFavorito(servico.id, 'servico') ? '❤️' : '🤍' }}
+              </button>
+              <div (click)="abrirDetalhes(servico, 'servico')" class="h-48 bg-gray-200 relative"><img [src]="servico.imagem" class="w-full h-full object-cover"></div>
               <div class="p-5">
-                <h3 class="font-bold text-gray-900 dark:text-white mb-2 truncate text-lg">{{ servico.titulo }}</h3>
-                <div class="flex justify-between items-center mt-4">
-                  <div class="text-yellow-400">★★★★★</div>
-                  <div class="font-black text-blue-600 dark:text-blue-400">{{ servico.preco }}</div>
-                </div>
+                <h3 (click)="abrirDetalhes(servico, 'servico')" class="font-bold text-lg">{{ servico.titulo }}</h3>
+                <p class="font-black text-purple-600 mt-2">{{ servico.preco }}</p>
               </div>
             </div>
           }
         } @else {
           @for (vaga of vagasFiltradas; track vaga.id) {
-            <div (click)="abrirDetalhes(vaga, 'vaga')" class="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden cursor-pointer hover:shadow-lg transform hover:-translate-y-1 transition-all">
-              <!-- AJUSTADO AQUI -->
-              <div class="h-36 md:h-48 bg-gray-200 dark:bg-gray-700"><img [src]="vaga.imagem" class="w-full h-full object-cover"></div>
+            <div class="bg-white rounded-xl shadow-sm border cursor-pointer hover:shadow-lg transition relative">
+              <button (click)="toggleFavorito(vaga, 'vaga', $event)" class="absolute top-2 right-2 z-20 text-2xl drop-shadow-md hover:scale-110 transition">
+                {{ isFavorito(vaga.id, 'vaga') ? '❤️' : '🤍' }}
+              </button>
+              <div (click)="abrirDetalhes(vaga, 'vaga')" class="h-48 bg-gray-200 relative"><img [src]="vaga.imagem" class="w-full h-full object-cover"></div>
               <div class="p-5">
-                <h3 class="font-bold text-gray-900 dark:text-white mb-2 truncate text-lg">{{ vaga.titulo }}</h3>
-                <div class="text-sm text-gray-500 dark:text-gray-400 mb-3 font-medium">📍 {{ vaga.empresa }}</div>
-                <div class="font-black text-green-600 dark:text-green-400">{{ vaga.pagamento }}</div>
+                <h3 (click)="abrirDetalhes(vaga, 'vaga')" class="font-bold text-lg">{{ vaga.titulo }}</h3>
+                <p class="text-sm mt-1">📍 {{ vaga.empresa }}</p>
               </div>
             </div>
           }
         }
       </div>
     </section>
-
-    <section class="bg-gray-50 dark:bg-gray-800 py-16 md:py-20 border-t border-gray-200 dark:border-gray-700">
-      <div class="max-w-7xl mx-auto px-8">
-        <div class="text-center mb-12 md:mb-16">
-          <h2 class="text-3xl md:text-4xl font-black text-gray-900 dark:text-white mb-4">Planos para Prestadores</h2>
-          <p class="text-gray-500 dark:text-gray-300 max-w-2xl mx-auto">Destaque seus serviços e alcance mais clientes.<br><span class="text-sm italic mt-2 block">*Empresas interessadas em postar vagas: parcerias via contato direto.</span></p>
-        </div>
-        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 items-center">
-          @for (plano of listaPlanos; track plano.nome) {
-            <div [class]="plano.destaque ? 'bg-gradient-to-br from-blue-600 to-purple-600 text-white transform scale-105 shadow-2xl border-none z-10' : 'bg-white dark:bg-gray-900 text-gray-800 dark:text-gray-200 border border-gray-200 dark:border-gray-700 shadow-sm'" class="rounded-2xl p-8 relative transition-all">
-              @if (plano.destaque) { <div class="absolute top-0 left-1/2 transform -translate-x-1/2 -translate-y-1/2 bg-yellow-400 text-yellow-900 text-xs font-black px-4 py-1.5 rounded-full uppercase tracking-wider">Mais Assinado</div> }
-              <h3 class="text-xl font-bold mb-4">{{ plano.nome }}</h3>
-              <div class="mb-6"><span class="text-4xl font-black">R$ {{ plano.precoMensal }}</span><span class="text-sm font-medium opacity-80">/mês</span></div>
-              <ul class="mb-8 space-y-4 text-sm font-medium">
-                <li class="flex items-center gap-3"><span>✓</span> {{ plano.servicosAtivos }}</li>
-                <li class="flex items-center gap-3"><span>✓</span> {{ plano.suporte }}</li>
-              </ul>
-              <button (click)="abrirCheckout(plano)" [class]="plano.destaque ? 'bg-white text-purple-600 hover:bg-gray-100' : 'bg-transparent border-2 border-purple-600 text-purple-600 dark:text-purple-400 hover:bg-purple-50 dark:hover:bg-gray-800'" class="w-full py-3.5 rounded-xl font-bold transition">Assinar {{ plano.nome }}</button>
-            </div>
-          }
-        </div>
-      </div>
-    </section>
   </div>
+
 } @else {
-  <div class="bg-white dark:bg-gray-900 min-h-screen transition-colors duration-300">
-    <main class="max-w-7xl mx-auto px-4 md:px-8 py-6 md:py-10">
-      <button (click)="voltarParaHome()" class="text-gray-500 dark:text-gray-400 hover:text-purple-600 dark:hover:text-purple-400 mb-6 md:mb-8 flex items-center gap-2 font-bold uppercase text-sm tracking-wider">
-        <span>&larr;</span> Voltar
-      </button>
+  <!-- TELA DE DETALHES -->
+  <div class="bg-white min-h-screen w-full">
+    <main class="max-w-7xl mx-auto px-4 py-10">
+      <button (click)="voltarParaHome()" class="font-bold uppercase text-sm mb-8 text-gray-500 hover:text-blue-600">&larr; Voltar</button>
       
-      <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-16">
-        
-        <!-- AJUSTADO AQUI: h-[250px] no celular, e só fica sticky na lg (Desktop) -->
-        <div class="rounded-3xl overflow-hidden shadow-xl h-[250px] lg:h-[500px] border border-gray-100 dark:border-gray-800 lg:sticky lg:top-24 z-0">
+      <div class="grid grid-cols-1 lg:grid-cols-2 gap-10">
+        <div class="rounded-3xl overflow-hidden shadow-xl h-[500px] bg-gray-100 relative">
+          <button (click)="toggleFavorito(itemSelecionado, tipoItemSelecionado!, $event)" class="absolute top-4 right-4 bg-white/90 p-4 rounded-full text-4xl drop-shadow-lg hover:scale-110 transition z-10">
+            {{ isFavorito(itemSelecionado.id, tipoItemSelecionado!) ? '❤️' : '🤍' }}
+          </button>
           <img [src]="itemSelecionado.imagem" class="w-full h-full object-cover">
         </div>
-
-        <div class="relative z-10">
+        
+        <div>
+          <h1 class="text-4xl font-black mb-2">{{ itemSelecionado.titulo }}</h1>
+          
           @if (tipoItemSelecionado === 'servico') {
-            <div class="text-yellow-400 text-xl mb-3">★★★★★ <span class="text-gray-500 dark:text-gray-400 text-sm ml-2 font-medium">4.9 (Verificado)</span></div>
-            <h1 class="text-3xl md:text-5xl font-black text-gray-900 dark:text-white mb-4 leading-tight">{{ itemSelecionado.titulo }}</h1>
-            <p class="text-2xl md:text-3xl font-black text-purple-600 dark:text-purple-400 mb-8 md:mb-10">{{ itemSelecionado.preco }}</p>
+            <p class="text-3xl font-black text-purple-600 mb-6">{{ itemSelecionado.preco }}</p>
+            <p class="bg-gray-50 p-6 rounded-2xl mb-8">{{ itemSelecionado.descricao }}</p>
+            <button (click)="prepararOrcamento()" class="w-full bg-purple-600 text-white font-black text-lg py-4 rounded-2xl mb-10 shadow-lg hover:bg-purple-700">Solicitar Orçamento</button>
             
-            <h3 class="text-xl font-bold text-gray-800 dark:text-white mb-3">Sobre o Serviço</h3>
-            <p class="text-gray-600 dark:text-gray-300 leading-relaxed mb-8 text-base md:text-lg bg-gray-50 dark:bg-gray-800 p-5 md:p-6 rounded-2xl border border-gray-100 dark:border-gray-700">
-              {{ itemSelecionado.sobreServico }}
-            </p>
-
-            <h3 class="text-xl font-bold text-gray-800 dark:text-white mb-3">Sobre o Profissional</h3>
-            <p class="text-gray-600 dark:text-gray-300 leading-relaxed mb-10 text-base md:text-lg">
-              {{ itemSelecionado.sobreProfissional }}
-            </p>
-
-            <div class="flex flex-col sm:flex-row gap-4">
-              <button class="flex-1 bg-green-500 text-white font-black text-lg py-4 md:py-5 rounded-2xl shadow-lg hover:bg-green-600 transform hover:-translate-y-1 transition-all flex justify-center items-center gap-2">📱 WhatsApp</button>
-              <button class="flex-1 bg-purple-600 text-white font-black text-lg py-4 md:py-5 rounded-2xl shadow-lg hover:bg-purple-700 transform hover:-translate-y-1 transition-all">✉️ Enviar E-mail</button>
+            <div class="border-t pt-8">
+              <div class="flex justify-between items-center mb-6">
+                <h3 class="text-2xl font-black">Avaliações</h3>
+                <button (click)="prepararAvaliacao()" class="bg-gray-100 hover:bg-gray-200 px-4 py-2 rounded-lg font-bold">Deixar Avaliação</button>
+              </div>
+              @for (av of avaliacoesDoServico; track av.id) { 
+                <div class="bg-gray-50 p-4 rounded-xl border mb-4">
+                  <div class="flex justify-between items-center mb-2">
+                    <span class="font-bold text-sm">{{ av.autor_nome }}</span>
+                    <span class="text-yellow-500 text-xs">{{ gerarEstrelas(av.nota) }}</span>
+                  </div>
+                  <p class="text-gray-600 text-sm">{{ av.comentario }}</p>
+                </div> 
+              }
             </div>
-            <p class="text-center text-sm text-gray-500 dark:text-gray-400 mt-4 font-medium mb-10 lg:mb-0">Contato direto: {{ itemSelecionado.contato }}</p>
+            
           } @else {
-            <div class="bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300 px-4 py-1.5 rounded-full text-sm font-bold inline-block mb-4">📍 {{ itemSelecionado.empresa }}</div>
-            <h1 class="text-3xl md:text-5xl font-black text-gray-900 dark:text-white mb-4 leading-tight">{{ itemSelecionado.titulo }}</h1>
-            <p class="text-2xl md:text-3xl font-black text-green-600 dark:text-green-400 mb-8 md:mb-10">{{ itemSelecionado.pagamento }}</p>
-            
-            <h3 class="text-xl font-bold text-gray-800 dark:text-white mb-3">Detalhes da Oportunidade</h3>
-            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-8">
-              <div class="bg-gray-50 dark:bg-gray-800 p-5 rounded-2xl border border-gray-100 dark:border-gray-700">
-                <p class="text-xs text-gray-500 dark:text-gray-400 font-bold uppercase mb-1">Localização</p>
-                <p class="text-gray-900 dark:text-white font-semibold">{{ itemSelecionado.local }}</p>
-              </div>
-              <div class="bg-gray-50 dark:bg-gray-800 p-5 rounded-2xl border border-gray-100 dark:border-gray-700">
-                <p class="text-xs text-gray-500 dark:text-gray-400 font-bold uppercase mb-1">Turnos</p>
-                <p class="text-gray-900 dark:text-white font-semibold">{{ itemSelecionado.turnos }}</p>
-              </div>
-              <div class="bg-gray-50 dark:bg-gray-800 p-5 rounded-2xl border border-gray-100 dark:border-gray-700">
-                <p class="text-xs text-gray-500 dark:text-gray-400 font-bold uppercase mb-1">Intervalo</p>
-                <p class="text-gray-900 dark:text-white font-semibold">{{ itemSelecionado.tempoAlmoco }}</p>
-              </div>
-              <div class="bg-gray-50 dark:bg-gray-800 p-5 rounded-2xl border border-gray-100 dark:border-gray-700">
-                <p class="text-xs text-gray-500 dark:text-gray-400 font-bold uppercase mb-1">Transporte</p>
-                <p class="text-gray-900 dark:text-white font-semibold">{{ itemSelecionado.fretado }}</p>
-              </div>
+            <div class="bg-cyan-100 text-cyan-800 px-4 py-1.5 rounded-full font-bold inline-block mb-3">📍 {{ itemSelecionado.empresa }}</div>
+            <p class="text-3xl font-black text-cyan-600 mb-6">{{ itemSelecionado.pagamento }}</p>
+            <div class="grid grid-cols-2 gap-4 mb-8 text-sm">
+              <div class="bg-gray-50 p-4 rounded-xl border"><p class="text-xs text-gray-500 font-bold uppercase">Local</p><p class="font-semibold">{{ itemSelecionado.local }}</p></div>
+              <div class="bg-gray-50 p-4 rounded-xl border"><p class="text-xs text-gray-500 font-bold uppercase">Horário</p><p class="font-semibold">{{ itemSelecionado.turnos }}</p></div>
             </div>
-
-            <h3 class="text-xl font-bold text-gray-800 dark:text-white mb-3">Descrição da Vaga</h3>
-            <p class="text-gray-600 dark:text-gray-300 leading-relaxed mb-10 text-base md:text-lg">{{ itemSelecionado.descricaoVaga }}</p>
-            <button class="w-full bg-blue-600 text-white font-black text-xl py-4 md:py-5 rounded-2xl shadow-lg hover:bg-blue-700 transform hover:-translate-y-1 transition-all">Candidatar-se à Vaga</button>
-            <p class="text-center text-sm text-gray-500 dark:text-gray-400 mt-4 font-medium mb-10 lg:mb-0">Você precisará estar logado para enviar seu currículo.</p>
+            <p class="bg-gray-50 p-6 rounded-2xl mb-8 whitespace-pre-line">{{ itemSelecionado.descricao }}</p>
+            <button (click)="prepararCandidatura()" class="w-full bg-cyan-600 text-white font-black text-lg py-4 rounded-2xl shadow-lg hover:bg-cyan-700">Enviar Currículo Direto</button>
           }
         </div>
       </div>
@@ -172,103 +395,148 @@
   </div>
 }
 
-<footer class="bg-[#0a0f1d] text-gray-400 py-16 mt-auto">
+<footer class="bg-[#0a0f1d] text-gray-400 py-16 mt-auto border-t-4 border-blue-600">
   <div class="max-w-7xl mx-auto px-8 grid grid-cols-1 md:grid-cols-3 gap-12 text-center md:text-left">
-    <div>
-      <h3 class="text-white text-3xl font-black tracking-tight mb-4">Ponte Ideal</h3>
-      <p class="text-sm uppercase tracking-wide">Conectando você ao seu próximo projeto.</p>
-    </div>
-    <div>
-      <h3 class="text-white font-bold mb-4 uppercase tracking-widest text-sm">Empresas</h3>
-      <p class="text-sm">Quer publicar vagas? Entre em contato conosco para uma parceria exclusiva.</p>
-    </div>
-    <div>
-      <h3 class="text-white font-bold mb-4 uppercase tracking-widest text-sm">Contato</h3>
-      <p class="text-sm">parcerias@ponteideal.com</p>
-    </div>
+    <div><h3 class="text-white text-3xl font-black mb-4">Ponte Ideal</h3></div>
   </div>
 </footer>
 
-<!-- Modais (Mantidos exatamente iguais) -->
-@if (mostrarModalCheckout && planoSelecionado) {
-  <div class="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-    <div class="bg-white dark:bg-gray-900 rounded-2xl shadow-2xl w-full max-w-lg overflow-hidden border border-gray-200 dark:border-gray-700">
-      <div class="bg-gradient-to-r from-blue-600 to-purple-600 p-6 text-white text-center relative">
-        <button (click)="fecharCheckout()" class="absolute top-4 right-5 text-3xl hover:text-purple-200">&times;</button>
-        <h3 class="font-black text-2xl mb-1">Finalizar Assinatura</h3>
-        <p class="opacity-90 font-medium">Plano {{ planoSelecionado.nome }}</p>
+<!-- ========================================================================= -->
+<!-- MODAIS -->
+<!-- ========================================================================= -->
+@if (mostrarModalNotificacoes) {
+  <div class="fixed inset-0 bg-black/50 z-50 flex justify-end" (click)="fecharNotificacoes()">
+    <div class="bg-white w-full max-w-sm h-full shadow-2xl p-6 overflow-y-auto" (click)="$event.stopPropagation()">
+      <div class="flex justify-between items-center mb-6 border-b pb-4">
+        <h3 class="font-black text-2xl">Notificações 🔔</h3>
+        <button (click)="fecharNotificacoes()" class="text-3xl text-gray-400 hover:text-red-500">&times;</button>
       </div>
-      <div class="p-8">
-        <div class="mb-5"><label class="block text-gray-700 dark:text-gray-300 text-sm font-bold mb-2">Número do Cartão</label><input type="text" placeholder="0000 0000 0000 0000" class="w-full px-4 py-3 bg-gray-50 dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-xl text-gray-900 dark:text-white"></div>
-        <div class="grid grid-cols-2 gap-4 mb-5">
-          <div><label class="block text-gray-700 dark:text-gray-300 text-sm font-bold mb-2">Validade</label><input type="text" placeholder="MM/AA" class="w-full px-4 py-3 bg-gray-50 dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-xl text-gray-900 dark:text-white"></div>
-          <div><label class="block text-gray-700 dark:text-gray-300 text-sm font-bold mb-2">CVV</label><input type="text" placeholder="123" class="w-full px-4 py-3 bg-gray-50 dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-xl text-gray-900 dark:text-white"></div>
-        </div>
-        <div class="mb-8">
-          <label class="block text-gray-700 dark:text-gray-300 text-sm font-bold mb-2">Opções de Parcelamento</label>
-          <select class="w-full px-4 py-3 bg-gray-50 dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-xl text-gray-900 dark:text-white font-medium">
-            @for (parcela of parcelasCheckout; track parcela.vezes) { <option>{{ parcela.texto }}</option> }
-          </select>
-        </div>
-        <button (click)="finalizarPagamento()" class="w-full bg-green-500 text-white font-black py-4 rounded-xl hover:bg-green-600 transition shadow-lg text-lg">Pagar e Ativar Plano</button>
+      <div class="flex flex-col gap-3">
+        @for (notif of notificacoes; track notif.id) {
+          <div (click)="marcarLida(notif)" [class]="notif.lida ? 'bg-gray-50 border-gray-200' : 'bg-blue-50 border-blue-200'" class="p-4 rounded-xl border cursor-pointer hover:shadow transition">
+            <p [class]="notif.lida ? 'text-gray-600' : 'font-bold text-blue-900'" class="text-sm">{{ notif.mensagem }}</p>
+            @if(!notif.lida) { <span class="text-[10px] uppercase font-black text-blue-500 mt-2 block">Novo</span> }
+          </div>
+        } @empty { 
+          <p class="text-gray-500 text-center py-10 font-bold">Nenhuma notificação nova.</p> 
+        }
       </div>
     </div>
   </div>
 }
 
 @if (mostrarModalLogin) {
-  <div class="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-    <div class="bg-white dark:bg-gray-900 rounded-2xl w-full max-w-md p-8 relative border border-gray-200 dark:border-gray-700">
-      <button (click)="fecharModalLogin()" class="absolute top-4 right-5 text-3xl text-gray-400 hover:text-red-500">&times;</button>
-      <h3 class="font-black text-2xl mb-6 text-gray-900 dark:text-white">{{ modoAuth === 'login' ? 'Acessar Conta' : 'Criar Nova Conta' }}</h3>
+  <div class="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4">
+    <div class="bg-white p-8 rounded-2xl w-full max-w-md relative">
+      <button (click)="fecharModalLogin()" class="absolute top-4 right-5 text-3xl">&times;</button>
+      <h3 class="font-black text-2xl mb-6">{{ modoAuth === 'login' ? 'Acessar Conta' : 'Criar Conta' }}</h3>
       @if (modoAuth === 'login') {
-        <input type="text" placeholder="E-mail ou CPF" class="w-full mb-4 px-4 py-3 bg-gray-50 dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-xl dark:text-white">
-        <input type="password" placeholder="Senha" class="w-full mb-6 px-4 py-3 bg-gray-50 dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-xl dark:text-white">
-        <button class="w-full bg-purple-600 text-white py-3.5 rounded-xl font-bold text-lg hover:bg-purple-700">Entrar</button>
-        <div class="text-center mt-6 text-purple-600 dark:text-purple-400 font-bold cursor-pointer" (click)="mudarModoAuth('cadastro')">Ainda não tem conta? Cadastre-se</div>
+        <input [(ngModel)]="dadosLogin.identificador" placeholder="E-mail ou Documento" class="w-full mb-4 p-3 border rounded-xl">
+        <input type="password" [(ngModel)]="dadosLogin.senha" placeholder="Senha" class="w-full mb-6 p-3 border rounded-xl">
+        <button (click)="fazerLoginReal()" class="w-full bg-blue-600 text-white py-3.5 rounded-xl font-bold hover:bg-blue-700">Entrar</button>
+        <p class="text-center mt-6 text-blue-600 font-bold cursor-pointer hover:underline" (click)="mudarModoAuth('cadastro')">Cadastre-se</p>
       } @else {
-        <div class="flex gap-2 mb-6 bg-gray-100 dark:bg-gray-800 p-1.5 rounded-xl">
-          <button (click)="tipoCadastro = 'prestador'" [class]="tipoCadastro === 'prestador' ? 'bg-white dark:bg-gray-700 shadow text-purple-600 dark:text-purple-400' : 'text-gray-500'" class="flex-1 py-2 font-bold rounded-lg transition">Prestador</button>
-          <button (click)="tipoCadastro = 'empresa'" [class]="tipoCadastro === 'empresa' ? 'bg-white dark:bg-gray-700 shadow text-purple-600 dark:text-purple-400' : 'text-gray-500'" class="flex-1 py-2 font-bold rounded-lg transition">Empresa</button>
+        <div class="flex gap-2 mb-6 bg-gray-100 p-1.5 rounded-xl">
+          <button (click)="tipoCadastro = 'prestador'" [class]="tipoCadastro === 'prestador' ? 'bg-white shadow text-purple-600' : 'text-gray-500'" class="flex-1 py-2 font-bold rounded-lg transition">Prestador</button>
+          <button (click)="tipoCadastro = 'empresa'" [class]="tipoCadastro === 'empresa' ? 'bg-white shadow text-cyan-600' : 'text-gray-500'" class="flex-1 py-2 font-bold rounded-lg transition">Empresa</button>
         </div>
-        <input type="text" [placeholder]="tipoCadastro === 'prestador' ? 'Nome Completo' : 'Nome da Empresa'" class="w-full mb-4 px-4 py-3 bg-gray-50 dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-xl dark:text-white">
-        <input type="text" [placeholder]="tipoCadastro === 'prestador' ? 'CPF (Obrigatório para segurança)' : 'CNPJ'" class="w-full mb-4 px-4 py-3 bg-gray-50 dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-xl dark:text-white font-bold">
-        <input type="email" placeholder="E-mail" class="w-full mb-4 px-4 py-3 bg-gray-50 dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-xl dark:text-white">
-        <input type="password" placeholder="Criar Senha" class="w-full mb-6 px-4 py-3 bg-gray-50 dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-xl dark:text-white">
-        <button [class]="tipoCadastro === 'prestador' ? 'bg-purple-600 hover:bg-purple-700' : 'bg-gray-900 dark:bg-gray-700 hover:bg-black'" class="w-full text-white font-bold py-3.5 rounded-xl text-lg transition">Cadastrar {{ tipoCadastro === 'prestador' ? 'Prestador' : 'Empresa' }}</button>
-        <div class="text-center mt-6 text-purple-600 dark:text-purple-400 font-bold cursor-pointer" (click)="mudarModoAuth('login')">Já tem conta? Faça Login</div>
+        <input [(ngModel)]="dadosCadastro.nome" placeholder="Nome Completo" class="w-full mb-4 p-3 border rounded-xl">
+        <input [(ngModel)]="dadosCadastro.documento" placeholder="Documento (CPF/CNPJ)" class="w-full mb-4 p-3 border rounded-xl">
+        <input [(ngModel)]="dadosCadastro.email" placeholder="E-mail" class="w-full mb-4 p-3 border rounded-xl">
+        <input type="password" [(ngModel)]="dadosCadastro.senha" placeholder="Senha" class="w-full mb-6 p-3 border rounded-xl">
+        <button (click)="fazerCadastroReal()" class="w-full bg-blue-600 text-white py-3.5 rounded-xl font-bold hover:bg-blue-700">Cadastrar</button>
+        <p class="text-center mt-6 text-gray-500 font-bold cursor-pointer hover:underline" (click)="mudarModoAuth('login')">Fazer Login</p>
       }
     </div>
   </div>
 }
 
-@if (mostrarModalSobre) {
-  <div class="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-    <div class="bg-white dark:bg-gray-900 rounded-2xl w-full max-w-lg p-8 relative border border-gray-200 dark:border-gray-700">
-      <button (click)="fecharSobre()" class="absolute top-4 right-5 text-3xl text-gray-400 hover:text-red-500">&times;</button>
-      <h3 class="font-black text-3xl mb-4 text-purple-600 dark:text-purple-400">Sobre a Ponte Ideal</h3>
-      <p class="text-gray-700 dark:text-gray-300 mb-4 leading-relaxed font-medium">A <strong>Ponte Ideal</strong> nasceu em Betim/MG com uma missão clara: conectar talentos locais a oportunidades reais.</p>
-      <p class="text-gray-700 dark:text-gray-300 mb-6 leading-relaxed font-medium">Acreditamos num mercado mais justo, onde empresas encontram os profissionais certos rapidamente, e prestadores de serviço ganham a visibilidade que o seu trabalho árduo merece.</p>
-      <button (click)="fecharSobre()" class="w-full bg-gray-900 dark:bg-white dark:text-gray-900 text-white font-bold py-3 rounded-xl hover:opacity-90">Fechar</button>
+@if (mostrarModalAnuncio) {
+  <div class="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4">
+    <div class="bg-white rounded-2xl w-full max-w-2xl p-6 relative">
+      <button (click)="fecharModalAnuncio()" class="absolute top-4 right-5 text-3xl">&times;</button>
+      <h3 class="font-black text-xl mb-4">Serviço</h3>
+      <input [(ngModel)]="novoServico.titulo" placeholder="Título" class="w-full mb-4 p-3 border rounded-xl">
+      <div class="flex gap-4 mb-4">
+        <input [(ngModel)]="novoServico.preco" placeholder="Preço" class="w-1/3 p-3 border rounded-xl">
+        <select [(ngModel)]="novoServico.formato" class="w-1/3 p-3 border rounded-xl"><option>Presencial</option><option>Digital</option></select>
+        <select [(ngModel)]="novoServico.categoria" class="w-1/3 p-3 border rounded-xl">
+          @for(c of listaCategorias; track c) { <option [value]="c">{{c}}</option> }
+        </select>
+      </div>
+      <input [(ngModel)]="novoServico.imagem" placeholder="Link da Imagem" class="w-full mb-4 p-3 border rounded-xl text-sm">
+      <textarea [(ngModel)]="novoServico.descricao" placeholder="Descrição" class="w-full p-3 border rounded-xl h-32 mb-6"></textarea>
+      <button (click)="publicarAnuncio()" class="w-full bg-purple-600 text-white py-4 rounded-xl font-bold hover:bg-purple-700">Salvar</button>
     </div>
   </div>
 }
 
-@if (mostrarModalAnuncio) {
-  <div class="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-    <div class="bg-white dark:bg-gray-900 rounded-2xl shadow-2xl w-full max-w-2xl overflow-hidden max-h-[90vh] overflow-y-auto border border-gray-200 dark:border-gray-700">
-      <div class="px-8 py-5 border-b border-gray-100 dark:border-gray-800 flex justify-between items-center bg-gray-50 dark:bg-gray-800/50">
-        <h3 class="font-black text-xl text-gray-900 dark:text-white">Criar Anúncio</h3>
-        <button (click)="fecharModalAnuncio()" class="text-gray-400 hover:text-red-500 text-3xl leading-none">&times;</button>
+@if (mostrarModalVaga) {
+  <div class="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4">
+    <div class="bg-white rounded-2xl w-full max-w-2xl p-6 relative">
+      <button (click)="fecharModalVaga()" class="absolute top-4 right-5 text-3xl">&times;</button>
+      <h3 class="font-black text-xl mb-4">Vaga</h3>
+      <input [(ngModel)]="novaVaga.titulo" placeholder="Título" class="w-full mb-4 p-3 border rounded-xl">
+      <select [(ngModel)]="novaVaga.categoria" class="w-full p-3 border rounded-xl mb-4">
+        @for(c of listaCategorias; track c) { <option [value]="c">{{c}}</option> }
+      </select>
+      <div class="flex gap-4 mb-4">
+        <input [(ngModel)]="novaVaga.local" placeholder="Local" class="w-1/2 p-3 border rounded-xl">
+        <input [(ngModel)]="novaVaga.pagamento" placeholder="Pagamento" class="w-1/2 p-3 border rounded-xl">
       </div>
-      <div class="p-8">
-        <div class="mb-5"><label class="block text-gray-700 dark:text-gray-300 text-sm font-bold mb-2">Título do serviço</label><input type="text" [(ngModel)]="novoServico.titulo" placeholder="Ex: Desenvolvedor Web, Eletricista..." class="w-full px-4 py-3 bg-gray-50 dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-xl text-gray-900 dark:text-white outline-none focus:ring-2 focus:ring-purple-500"></div>
-        <div class="grid grid-cols-2 gap-6 mb-8">
-          <div><label class="block text-gray-700 dark:text-gray-300 text-sm font-bold mb-2">Preço</label><input type="text" [(ngModel)]="novoServico.preco" placeholder="Ex: R$ 150,00" class="w-full px-4 py-3 bg-gray-50 dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-xl text-gray-900 dark:text-white outline-none focus:ring-2 focus:ring-purple-500"></div>
-          <div><label class="block text-gray-700 dark:text-gray-300 text-sm font-bold mb-2">Formato</label><select [(ngModel)]="novoServico.formato" class="w-full px-4 py-3 bg-gray-50 dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-xl text-gray-900 dark:text-white font-medium outline-none focus:ring-2 focus:ring-purple-500"><option>Presencial</option><option>Digital</option></select></div>
-        </div>
-        <button (click)="publicarAnuncio()" class="w-full bg-gradient-to-r from-blue-600 to-purple-600 text-white font-black py-4 rounded-xl hover:opacity-90 transition shadow-lg text-lg">Publicar Anúncio</button>
+      <div class="flex gap-4 mb-4">
+        <input [(ngModel)]="novaVaga.turnos" placeholder="Horário" class="w-1/3 p-3 border rounded-xl">
+        <input [(ngModel)]="novaVaga.tempo_almoco" placeholder="Almoço" class="w-1/3 p-3 border rounded-xl">
+        <select [(ngModel)]="novaVaga.fretado" class="w-1/3 p-3 border rounded-xl"><option>Não possui</option><option>Sim</option></select>
       </div>
+      <input [(ngModel)]="novaVaga.imagem" placeholder="Link da Imagem" class="w-full mb-4 p-3 border rounded-xl text-sm">
+      <textarea [(ngModel)]="novaVaga.descricao" placeholder="Descrição" class="w-full p-3 border rounded-xl h-32 mb-6"></textarea>
+      <button (click)="publicarVaga()" class="w-full bg-cyan-600 text-white py-4 rounded-xl font-bold hover:bg-cyan-700">Salvar</button>
+    </div>
+  </div>
+}
+
+@if (mostrarModalOrcamento) {
+  <div class="fixed inset-0 bg-black/70 flex items-center justify-center z-50">
+    <div class="bg-white p-8 rounded-xl max-w-md w-full relative shadow-2xl">
+      <button (click)="fecharModalOrcamento()" class="absolute top-4 right-4 text-2xl">&times;</button>
+      <h2 class="font-bold text-xl mb-4">Orçamento</h2>
+      <input [(ngModel)]="dadosOrcamento.telefone" placeholder="WhatsApp" class="border w-full p-3 mb-4 rounded-lg">
+      <textarea [(ngModel)]="dadosOrcamento.mensagem" placeholder="Mensagem" class="border w-full p-3 mb-4 rounded-lg h-32"></textarea>
+      <button (click)="enviarOrcamento()" class="w-full bg-purple-600 hover:bg-purple-700 text-white py-3 rounded-lg font-bold">Enviar</button>
+    </div>
+  </div>
+}
+
+@if (mostrarModalAvaliacao) {
+  <div class="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4">
+    <div class="bg-white rounded-2xl w-full max-w-sm p-8 relative shadow-2xl">
+      <button (click)="fecharModalAvaliacao()" class="absolute top-4 right-5 text-3xl">&times;</button>
+      <h3 class="font-black text-xl mb-4 text-center">Avaliar Serviço</h3>
+      <div class="mb-4">
+        <label class="block text-center text-sm font-bold mb-2">Sua Nota (1 a 5)</label>
+        <select [(ngModel)]="dadosAvaliacao.nota" class="w-full p-3 bg-gray-50 border rounded-xl text-center text-lg font-bold">
+          <option [value]="5">⭐⭐⭐⭐⭐ (Excelente)</option>
+          <option [value]="4">⭐⭐⭐⭐ (Muito Bom)</option>
+          <option [value]="3">⭐⭐⭐ (Médio)</option>
+          <option [value]="2">⭐⭐ (Ruim)</option>
+          <option [value]="1">⭐ (Péssimo)</option>
+        </select>
+      </div>
+      <textarea [(ngModel)]="dadosAvaliacao.comentario" placeholder="Deixe um comentário curto..." class="w-full h-24 p-3 bg-gray-50 border rounded-xl mb-4 text-sm"></textarea>
+      <button (click)="enviarAvaliacao()" class="w-full bg-yellow-500 hover:bg-yellow-600 text-white py-3 rounded-xl font-black shadow-lg">Publicar Avaliação</button>
+    </div>
+  </div>
+}
+
+@if (mostrarModalCandidatura) {
+  <div class="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4">
+    <div class="bg-white rounded-2xl w-full max-w-md p-8 relative shadow-2xl">
+      <button (click)="fecharModalCandidatura()" class="absolute top-4 right-5 text-3xl">&times;</button>
+      <h3 class="font-black text-2xl mb-4">Enviar Currículo</h3>
+      <input [(ngModel)]="dadosCandidatura.telefone" placeholder="WhatsApp *" class="w-full mb-4 p-3 border rounded-xl">
+      <textarea [(ngModel)]="dadosCandidatura.mensagem" placeholder="Mini Currículo" class="w-full h-32 p-3 border rounded-xl mb-4"></textarea>
+      <button (click)="enviarCurriculo()" class="w-full bg-cyan-600 hover:bg-cyan-700 text-white py-3.5 rounded-xl font-bold shadow-lg">Enviar</button>
     </div>
   </div>
 }

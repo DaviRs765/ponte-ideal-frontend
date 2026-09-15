@@ -1,173 +1,95 @@
-import { Component } from '@angular/core';
+import { Component, OnInit } from '@angular/core';
 import { RouterOutlet } from '@angular/router';
 import { FormsModule } from '@angular/forms';
+import { HttpClient, HttpClientModule } from '@angular/common/http'; 
 
 @Component({
   selector: 'app-root',
   standalone: true,
-  imports: [RouterOutlet, FormsModule],
+  imports: [RouterOutlet, FormsModule, HttpClientModule], 
   templateUrl: './app.html',
   styleUrl: './app.css'
 })
-export class App {
-  abaAtiva = 'servicos';
+export class App implements OnInit {
+  constructor(private http: HttpClient) {}
 
-  mudarAba(nomeDaAba: string) {
-    this.abaAtiva = nomeDaAba;
-  }
+  ngOnInit() { this.carregarServicos(); this.carregarVagas(); }
 
-  menuMobileAberto = false;
-  toggleMenuMobile() {
-    this.menuMobileAberto = !this.menuMobileAberto;
-  }
+  abaAtiva = 'servicos'; menuMobileAberto = false; 
+  modoGerenciamento = false; modoAdmin = false; 
+  abaPainel = 'dashboard'; // Nova aba principal do painel!
+  termoBusca = ''; filtroCategoria = ''; filtroFormato = '';
+  listaCategorias = ['Tecnologia', 'Reformas e Construção', 'Serviços Domésticos', 'Aulas e Consultoria', 'Beleza e Saúde', 'Logística', 'Design e Marketing', 'Outros'];
 
-  termoBusca = ''; 
-
-  get servicosFiltrados() {
-    if (!this.termoBusca) return this.listaServicos;
-    return this.listaServicos.filter(servico => 
-      servico.titulo.toLowerCase().includes(this.termoBusca.toLowerCase())
-    );
-  }
-
-  get vagasFiltradas() {
-    if (!this.termoBusca) return this.listaVagas;
-    return this.listaVagas.filter(vaga => 
-      vaga.titulo.toLowerCase().includes(this.termoBusca.toLowerCase()) ||
-      vaga.empresa.toLowerCase().includes(this.termoBusca.toLowerCase())
-    );
-  }
-
-  // --- MODAL DE LOGIN E CADASTRO ---
-  mostrarModalLogin = false;
-  modoAuth = 'login'; 
-  tipoCadastro = 'prestador'; 
-
-  abrirModalLogin() {
-    this.mostrarModalLogin = true;
-    this.modoAuth = 'login'; 
-    this.menuMobileAberto = false; 
-  }
-  fecharModalLogin() { this.mostrarModalLogin = false; }
-  mudarModoAuth(modo: string) { this.modoAuth = modo; }
-
-  // --- MODAL DE ANÚNCIO ---
-  mostrarModalAnuncio = false;
-  abrirModalAnuncio() {
-    this.mostrarModalAnuncio = true;
-    this.menuMobileAberto = false;
-  }
-  fecharModalAnuncio() { this.mostrarModalAnuncio = false; }
-
-  novoServico = { titulo: '', descricao: '', preco: '', formato: 'Presencial', localizacao: '' };
-
-  publicarAnuncio() {
-    if (!this.novoServico.titulo) {
-      alert('Por favor, preencha pelo menos o título do serviço!');
-      return;
-    }
-    const servico = {
-      id: this.listaServicos.length + 1,
-      titulo: this.novoServico.titulo,
-      preco: this.novoServico.preco || 'A combinar',
-      avaliacao: '5.0',
-      imagem: 'https://images.unsplash.com/photo-1542744173-8e7e53415bb0?auto=format&fit=crop&w=400&q=80',
-      sobreServico: this.novoServico.descricao || 'Serviço recém-publicado na plataforma.',
-      sobreProfissional: 'Profissional novo na plataforma.',
-      contato: 'Não informado'
-    };
-    this.listaServicos.unshift(servico);
-    this.novoServico = { titulo: '', descricao: '', preco: '', formato: 'Presencial', localizacao: '' };
-    this.fecharModalAnuncio();
-    this.mudarAba('servicos');
-  }
-
-  // --- NAVEGAÇÃO INTELIGENTE (SERVIÇOS E VAGAS) ---
-  itemSelecionado: any = null;
-  tipoItemSelecionado: 'servico' | 'vaga' | null = null;
-
-  abrirDetalhes(item: any, tipo: 'servico' | 'vaga') {
-    this.itemSelecionado = item;
-    this.tipoItemSelecionado = tipo;
-    window.scrollTo(0, 0);
-  }
+  mudarAba(aba: string) { this.abaAtiva = aba; this.filtroCategoria = ''; this.filtroFormato = ''; }
+  toggleMenuMobile() { this.menuMobileAberto = !this.menuMobileAberto; }
   
-  voltarParaHome() { 
-    this.itemSelecionado = null; 
-    this.tipoItemSelecionado = null;
+  abrirGerenciamento() { this.modoGerenciamento = true; this.modoAdmin = false; this.itemSelecionado = null; this.perfilPublicoAtivo = null; this.abaPainel = 'dashboard'; this.menuMobileAberto = false; window.scrollTo(0, 0); this.carregarMetricas(); }
+  abrirAdmin() { this.modoAdmin = true; this.modoGerenciamento = false; this.itemSelecionado = null; this.perfilPublicoAtivo = null; this.menuMobileAberto = false; window.scrollTo(0, 0); this.carregarAdmin(); }
+  voltarParaHome() { this.itemSelecionado = null; this.tipoItemSelecionado = null; this.modoGerenciamento = false; this.modoAdmin = false; this.perfilPublicoAtivo = null; window.scrollTo(0, 0); }
+
+  get servicosFiltrados() { return this.listaServicos.filter((s: any) => (s.status === 'ativo' || !s.status) && (!this.termoBusca || s.titulo.toLowerCase().includes(this.termoBusca.toLowerCase())) && (!this.filtroCategoria || s.categoria === this.filtroCategoria) && (!this.filtroFormato || s.formato === this.filtroFormato)); }
+  get vagasFiltradas() { return this.listaVagas.filter((v: any) => (v.status === 'ativo' || !v.status) && (!this.termoBusca || v.titulo.toLowerCase().includes(this.termoBusca.toLowerCase()) || v.empresa.toLowerCase().includes(this.termoBusca.toLowerCase())) && (!this.filtroCategoria || v.categoria === this.filtroCategoria)); }
+
+  // --- DASHBOARD E MÉTRICAS (FUNÇÃO 10) ---
+  metricas = { total_anuncios: 0, total_interacoes: 0, total_favoritos: 0 };
+  carregarMetricas() {
+    if (!this.usuarioIdLogado) return;
+    this.http.get(`http://localhost:3000/api/usuarios/${this.usuarioIdLogado}/metricas`).subscribe({ next: (d: any) => this.metricas = d });
   }
 
-  // --- MODAL SOBRE ---
-  mostrarModalSobre = false;
-  abrirSobre() { this.mostrarModalSobre = true; }
-  fecharSobre() { this.mostrarModalSobre = false; }
-
-  // --- SISTEMA DE CHECKOUT (ASSINATURA) ---
-  mostrarModalCheckout = false;
-  planoSelecionado: any = null;
-  parcelasCheckout: any[] = [];
-  
-  abrirCheckout(plano: any) {
-    this.planoSelecionado = plano;
-    this.gerarParcelas(plano);
-    this.mostrarModalCheckout = true;
+  // --- ADMIN SYSTEM (FUNÇÃO 11) ---
+  usuariosAdmin: any[] = [];
+  abaAdmin = 'usuarios';
+  carregarAdmin() {
+    this.http.get('http://localhost:3000/api/admin/usuarios').subscribe({ next: (d: any) => this.usuariosAdmin = d });
+    this.carregarServicos(); this.carregarVagas();
   }
-  fecharCheckout() {
-    this.mostrarModalCheckout = false;
-    this.planoSelecionado = null;
-  }
-  gerarParcelas(plano: any) {
-    this.parcelasCheckout = [];
-    const total = plano.precoMensal * plano.meses;
-    for (let i = 1; i <= plano.meses; i++) {
-      const valorParcela = (total / i).toFixed(2).replace('.', ',');
-      this.parcelasCheckout.push({ vezes: i, texto: `${i}x de R$ ${valorParcela} (Total: R$ ${total.toFixed(2).replace('.', ',')})` });
+  banirUsuario(id: number) {
+    if(confirm('🚨 ALERTA ADMIN: Tem certeza que deseja BANIR este usuário permanentemente?')) {
+      this.http.delete(`http://localhost:3000/api/admin/usuarios/${id}`).subscribe({ next: (r: any) => { alert('🔨 ' + r.mensagem); this.carregarAdmin(); } });
     }
   }
-  finalizarPagamento() {
-    alert('Pagamento processado com sucesso! Bem-vindo ao plano ' + this.planoSelecionado.nome + '!');
-    this.fecharCheckout();
+  excluirAnuncioAdmin(id: number, tipo: string) {
+    if(confirm('🚨 ALERTA ADMIN: Apagar este anúncio por violação de regras?')) {
+      const url = tipo === 'servico' ? `http://localhost:3000/api/servicos/${id}` : `http://localhost:3000/api/vagas/${id}`;
+      this.http.delete(url).subscribe({ next: () => { alert('🗑️ Anúncio apagado!'); this.carregarAdmin(); } });
+    }
   }
 
-  // --- DADOS ENRIQUECIDOS ---
-  listaServicos = [
-    { 
-      id: 1, titulo: 'Tradução de Documentos', preco: 'R$ 80/hora', avaliacao: '4.7', imagem: 'https://images.unsplash.com/photo-1450101499163-c8848c66ca85?auto=format&fit=crop&w=400&q=80',
-      sobreServico: 'Tradução juramentada e técnica de documentos do inglês e espanhol para o português. Garantia de formatação original e entrega em até 48h para textos de até 10 páginas.',
-      sobreProfissional: 'Sou tradutor certificado com mais de 8 anos de experiência corporativa, formado em Letras e especializado em contratos jurídicos.',
-      contato: '+55 (31) 98888-7777'
-    },
-    { 
-      id: 2, titulo: 'Edição de Vídeos Vintage', preco: 'R$ 120/vídeo', avaliacao: '5.0', imagem: 'https://images.unsplash.com/photo-1574717024653-61fd2cf4d44d?auto=format&fit=crop&w=400&q=80',
-      sobreServico: 'Edição de reels e TikToks com estética vintage/retro. Inclui color grading analógico, inserção de ruídos de fita e legendas dinâmicas.',
-      sobreProfissional: 'Filmmaker apaixonado pelos anos 80 e 90. Já editei para grandes perfis de lifestyle e moda na região.',
-      contato: '+55 (31) 97777-6666'
-    }
-  ];
+  perfilPublicoAtivo: any = null; avaliacoesPerfilPublico: any[] = [];
+  abrirPerfilPublico(usuarioId: number) { this.http.get(`http://localhost:3000/api/usuarios/${usuarioId}`).subscribe({ next: (dados: any) => { this.perfilPublicoAtivo = dados; this.itemSelecionado = null; this.modoGerenciamento = false; this.modoAdmin = false; window.scrollTo(0, 0); this.http.get(`http://localhost:3000/api/usuarios/${usuarioId}/avaliacoes_recebidas`).subscribe({ next: (avs: any) => this.avaliacoesPerfilPublico = avs }); }, error: () => alert('Usuário não encontrado.') }); }
 
-  listaVagas = [
-    { 
-      id: 1, titulo: 'Auxiliar de Logística (Urgente)', empresa: 'Transportes Betim', pagamento: 'R$ 150 / dia', tipo: 'Presencial', imagem: 'https://images.unsplash.com/photo-1586528116311-ad8ed7e66364?auto=format&fit=crop&w=400&q=80',
-      local: 'Distrito Industrial, Betim/MG',
-      turnos: '08:00 às 17:00 (Segunda a Sexta)',
-      tempoAlmoco: '1 hora e 30 minutos',
-      fretado: 'Sim (Saídas do Centro e PTB)',
-      descricaoVaga: 'Precisamos de auxiliar para carga e descarga de mercadorias leves, organização de paletes e uso de leitor de código de barras. É essencial ter disposição física e pontualidade.'
-    },
-    { 
-      id: 2, titulo: 'Pintor para Galpão', empresa: 'Construtora Silva', pagamento: 'R$ 2.500 / obra', tipo: 'Presencial', imagem: 'https://images.unsplash.com/photo-1589939705384-5185137a7f0f?auto=format&fit=crop&w=400&q=80',
-      local: 'Jardim Teresópolis, Betim/MG',
-      turnos: 'Horário Livre (Entrega por Demanda)',
-      tempoAlmoco: 'Livre',
-      fretado: 'Não possui (Vale Transporte em dinheiro)',
-      descricaoVaga: 'Contratação para pintura completa de galpão de 500m². O profissional deve trazer rolos e trinchas; a empresa fornecerá tintas, andaimes e lixas. Pagamento 50% no início e 50% na entrega.'
-    }
-  ];
+  dadosMeuPerfil: any = { bio: '', foto_perfil: '', whatsapp: '', linkedin: '', instagram: '' };
+  carregarDadosUsuario() { if (!this.usuarioIdLogado) return; this.http.get(`http://localhost:3000/api/usuarios/${this.usuarioIdLogado}`).subscribe({ next: (dados: any) => this.dadosMeuPerfil = dados }); this.carregarNotificacoes(); this.carregarFavoritos(); this.carregarMetricas(); }
+  salvarMeuPerfil() { this.http.put(`http://localhost:3000/api/usuarios/${this.usuarioIdLogado}/perfil`, this.dadosMeuPerfil).subscribe({ next: (res: any) => alert('✅ ' + res.mensagem) }); }
 
-  listaPlanos = [
-    { nome: 'Mensal', precoMensal: 39.90, meses: 1, servicosAtivos: '1 serviço', suporte: 'Suporte básico', destaque: false },
-    { nome: 'Trimestral', precoMensal: 35.90, meses: 3, servicosAtivos: '3 serviços', suporte: 'Suporte prioritário', destaque: false },
-    { nome: 'Semestral', precoMensal: 31.90, meses: 6, servicosAtivos: '6 serviços', suporte: 'Suporte premium', destaque: false },
-    { nome: 'Anual', precoMensal: 23.90, meses: 12, servicosAtivos: 'Ilimitado', suporte: 'Suporte VIP', destaque: true }
-  ];
+  itemSelecionado: any = null; tipoItemSelecionado: 'servico' | 'vaga' | null = null;
+  abrirDetalhes(item: any, tipo: 'servico' | 'vaga') { this.itemSelecionado = item; this.tipoItemSelecionado = tipo; this.modoGerenciamento = false; this.modoAdmin = false; this.perfilPublicoAtivo = null; window.scrollTo(0, 0); if (tipo === 'servico') this.carregarAvaliacoes(item.id); }
+
+  notificacoes: any[] = []; mostrarModalNotificacoes = false; get notificacoesNaoLidas() { return this.notificacoes.filter(n => !n.lida).length; }
+  carregarNotificacoes() { this.http.get(`http://localhost:3000/api/usuarios/${this.usuarioIdLogado}/notificacoes`).subscribe({ next: (d: any) => this.notificacoes = d }); }
+  abrirNotificacoes() { this.mostrarModalNotificacoes = true; } fecharNotificacoes() { this.mostrarModalNotificacoes = false; }
+  marcarLida(n: any) { if(n.lida) return; this.http.put(`http://localhost:3000/api/notificacoes/${n.id}/lida`, {}).subscribe({ next: () => n.lida = 1 }); }
+
+  favoritosBrutos: any[] = [];
+  carregarFavoritos() { this.http.get(`http://localhost:3000/api/usuarios/${this.usuarioIdLogado}/favoritos`).subscribe({ next: (d: any) => this.favoritosBrutos = d }); }
+  isFavorito(itemId: number, tipoItem: string): boolean { return this.favoritosBrutos.some(f => f.item_id === itemId && f.tipo_item === tipoItem); }
+  toggleFavorito(item: any, tipoItem: string, event: Event) { event.stopPropagation(); if (!this.usuarioLogado) return this.abrirModalLogin(); const jaFav = this.isFavorito(item.id, tipoItem); if (jaFav) { this.http.delete(`http://localhost:3000/api/favoritos/${this.usuarioIdLogado}/${tipoItem}/${item.id}`).subscribe({ next: () => this.carregarFavoritos() }); } else { this.http.post('http://localhost:3000/api/favoritos', { usuario_id: this.usuarioIdLogado, item_id: item.id, tipo_item: tipoItem }).subscribe({ next: () => this.carregarFavoritos() }); } }
+  get meusFavoritosRenderizados() { const sFav = this.listaServicos.filter((s: any) => this.isFavorito(s.id, 'servico')).map((s: any) => ({ ...s, _tipo: 'servico' })); const vFav = this.listaVagas.filter((v: any) => this.isFavorito(v.id, 'vaga')).map((v: any) => ({ ...v, _tipo: 'vaga' })); return [...sFav, ...vFav]; }
+
+  mostrarModalLogin = false; modoAuth = 'login'; tipoCadastro = 'prestador'; dadosCadastro = { nome: '', documento: '', email: '', senha: '' }; dadosLogin = { identificador: '', senha: '' };
+  usuarioLogado: string | null = null; tipoUsuarioLogado: string | null = null; usuarioIdLogado: number | null = null; 
+  abrirModalLogin() { this.mostrarModalLogin = true; this.modoAuth = 'login'; this.menuMobileAberto = false; } fecharModalLogin() { this.mostrarModalLogin = false; } mudarModoAuth(modo: string) { this.modoAuth = modo; }
+  fazerCadastroReal() { const p = { tipo: this.tipoCadastro, ...this.dadosCadastro }; this.http.post('http://localhost:3000/api/cadastro', p).subscribe({ next: (res: any) => { alert('🎉 ' + res.mensagem); this.mudarModoAuth('login'); }, error: (e) => alert('❌ Erro.') }); }
+  fazerLoginReal() { this.http.post('http://localhost:3000/api/login', this.dadosLogin).subscribe({ next: (res: any) => { this.usuarioLogado = res.nome; this.tipoUsuarioLogado = res.tipo; this.usuarioIdLogado = Number(res.id); if (this.tipoUsuarioLogado === 'empresa') this.mudarAba('vagas'); if (this.tipoUsuarioLogado === 'admin') alert('👑 Modo Administrador Ativado!'); else alert('🎉 ' + res.mensagem); this.dadosLogin = { identificador: '', senha: '' }; this.fecharModalLogin(); this.carregarDadosUsuario(); }, error: (e) => alert('❌ Senha incorreta.') }); }
+  fazerLogout() { this.usuarioLogado = null; this.tipoUsuarioLogado = null; this.usuarioIdLogado = null; this.modoGerenciamento = false; this.modoAdmin = false; this.perfilPublicoAtivo = null; this.notificacoes = []; this.favoritosBrutos = []; }
+
+  listaServicos: any = []; mostrarModalAnuncio = false; novoServico: any = { id: null, titulo: '', preco: '', formato: 'Presencial', descricao: '', imagem: '', categoria: 'Outros' }; get meusServicos() { return this.listaServicos.filter((s: any) => Number(s.usuario_id) === this.usuarioIdLogado); } carregarServicos() { this.http.get('http://localhost:3000/api/servicos').subscribe({ next: (d: any) => this.listaServicos = d }); } abrirModalAnuncio(serv: any = null) { if (!this.usuarioLogado) return this.abrirModalLogin(); this.novoServico = serv ? { ...serv } : { id: null, titulo: '', preco: '', formato: 'Presencial', descricao: '', imagem: '', categoria: 'Outros' }; this.mostrarModalAnuncio = true; } fecharModalAnuncio() { this.mostrarModalAnuncio = false; } publicarAnuncio() { const p = { ...this.novoServico, usuario_id: this.usuarioIdLogado }; if (p.id) this.http.put('http://localhost:3000/api/servicos/' + p.id, p).subscribe({ next: () => { alert('✏️ Salvo!'); this.fecharModalAnuncio(); this.carregarServicos(); }}); else this.http.post('http://localhost:3000/api/servicos', p).subscribe({ next: () => { alert('🚀 Criado!'); this.fecharModalAnuncio(); this.carregarServicos(); this.mudarAba('servicos'); this.modoGerenciamento = false; }}); } excluirServico(id: number) { if(confirm('Excluir?')) this.http.delete('http://localhost:3000/api/servicos/' + id).subscribe({ next: () => this.carregarServicos() }); } alternarStatusServico(s: any) { const st = s.status === 'ativo' || !s.status ? 'pausado' : 'ativo'; this.http.put(`http://localhost:3000/api/servicos/${s.id}/status`, { status: st }).subscribe({ next: () => s.status = st }); }
+  listaVagas: any = []; mostrarModalVaga = false; novaVaga: any = { id: null, titulo: '', pagamento: '', local: '', turnos: '', tempo_almoco: '', fretado: 'Não possui', descricao: '', imagem: '', categoria: 'Outros' }; get minhasVagas() { return this.listaVagas.filter((v: any) => Number(v.usuario_id) === this.usuarioIdLogado); } carregarVagas() { this.http.get('http://localhost:3000/api/vagas').subscribe({ next: (d: any) => this.listaVagas = d }); } abrirModalVaga(vaga: any = null) { if (!this.usuarioLogado) return this.abrirModalLogin(); this.novaVaga = vaga ? { ...vaga } : { id: null, titulo: '', pagamento: '', local: '', turnos: '', tempo_almoco: '', fretado: 'Não possui', descricao: '', imagem: '', categoria: 'Outros' }; this.mostrarModalVaga = true; } fecharModalVaga() { this.mostrarModalVaga = false; } publicarVaga() { const p = { ...this.novaVaga, empresa: this.usuarioLogado, usuario_id: this.usuarioIdLogado }; if (p.id) this.http.put('http://localhost:3000/api/vagas/' + p.id, p).subscribe({ next: () => { alert('✏️ Salvo!'); this.fecharModalVaga(); this.carregarVagas(); }}); else this.http.post('http://localhost:3000/api/vagas', p).subscribe({ next: () => { alert('🏢 Publicada!'); this.fecharModalVaga(); this.carregarVagas(); this.mudarAba('vagas'); this.modoGerenciamento = false; }}); } excluirVaga(id: number) { if(confirm('Excluir?')) this.http.delete('http://localhost:3000/api/vagas/' + id).subscribe({ next: () => this.carregarVagas() }); } alternarStatusVaga(v: any) { const st = v.status === 'ativo' || !v.status ? 'preenchida' : 'ativo'; this.http.put(`http://localhost:3000/api/vagas/${v.id}/status`, { status: st }).subscribe({ next: () => v.status = st }); }
+
+  mostrarModalCandidatura = false; dadosCandidatura = { telefone: '', mensagem: '' }; mostrarModalCandidatos = false; candidatosDaVaga: any[] = []; vagaParaVerCandidatos: any = null; prepararCandidatura() { if (!this.usuarioLogado) return this.abrirModalLogin(); this.dadosCandidatura = { telefone: '', mensagem: '' }; this.mostrarModalCandidatura = true; } fecharModalCandidatura() { this.mostrarModalCandidatura = false; } enviarCurriculo() { const pacote = { vaga_id: Number(this.itemSelecionado.id), prestador_id: Number(this.usuarioIdLogado), telefone: this.dadosCandidatura.telefone, mensagem: this.dadosCandidatura.mensagem }; this.http.post('http://localhost:3000/api/candidaturas', pacote).subscribe({ next: (res: any) => { alert('✅ ' + res.mensagem); this.fecharModalCandidatura(); } }); } abrirCandidatos(vaga: any) { this.vagaParaVerCandidatos = vaga; this.http.get(`http://localhost:3000/api/vagas/${vaga.id}/candidaturas`).subscribe({ next: (d: any) => { this.candidatosDaVaga = d; this.mostrarModalCandidatos = true; }}); } fecharCandidatos() { this.mostrarModalCandidatos = false; this.vagaParaVerCandidatos = null; } atualizarStatusCandidato(c: any, st: string) { this.http.put(`http://localhost:3000/api/candidaturas/${c.id}/status`, { status_candidatura: st }).subscribe({ next: () => c.status_candidatura = st }); }
+  mostrarModalOrcamento = false; dadosOrcamento = { cliente_nome: '', telefone: '', mensagem: '' }; prepararOrcamento() { this.dadosOrcamento = { cliente_nome: this.usuarioLogado || '', telefone: '', mensagem: '' }; this.mostrarModalOrcamento = true; } fecharModalOrcamento() { this.mostrarModalOrcamento = false; } enviarOrcamento() { const pacote = { servico_id: this.itemSelecionado.id, ...this.dadosOrcamento }; this.http.post('http://localhost:3000/api/orcamentos', pacote).subscribe({ next: (res: any) => { alert('✅ ' + res.mensagem); this.fecharModalOrcamento(); }}); } mostrarModalVerOrcamentos = false; orcamentosDoServico: any[] = []; servicoParaVerOrcamentos: any = null; abrirOrcamentos(servico: any) { this.servicoParaVerOrcamentos = servico; this.http.get(`http://localhost:3000/api/servicos/${servico.id}/orcamentos`).subscribe({ next: (d: any) => { this.orcamentosDoServico = d; this.mostrarModalVerOrcamentos = true; }}); } fecharVerOrcamentos() { this.mostrarModalVerOrcamentos = false; this.servicoParaVerOrcamentos = null; } atualizarStatusOrcamento(orc: any, novoStatus: string) { this.http.put(`http://localhost:3000/api/orcamentos/${orc.id}/status`, { status: novoStatus }).subscribe({ next: () => orc.status = novoStatus }); }
+  avaliacoesDoServico: any[] = []; mostrarModalAvaliacao = false; dadosAvaliacao = { autor_nome: '', nota: 5, comentario: '' }; carregarAvaliacoes(servicoId: number) { this.http.get(`http://localhost:3000/api/servicos/${servicoId}/avaliacoes`).subscribe({ next: (d: any) => this.avaliacoesDoServico = d }); } prepararAvaliacao() { if (!this.usuarioLogado) return this.abrirModalLogin(); this.dadosAvaliacao = { autor_nome: this.usuarioLogado, nota: 5, comentario: '' }; this.mostrarModalAvaliacao = true; } fecharModalAvaliacao() { this.mostrarModalAvaliacao = false; } enviarAvaliacao() { const pacote = { servico_id: this.itemSelecionado.id, autor_id: this.usuarioIdLogado, ...this.dadosAvaliacao }; this.http.post('http://localhost:3000/api/avaliacoes', pacote).subscribe({ next: (res: any) => { alert('⭐ ' + res.mensagem); this.fecharModalAvaliacao(); this.carregarAvaliacoes(this.itemSelecionado.id); this.carregarServicos(); } }); } gerarEstrelas(nota: number): string { return '⭐'.repeat(Math.round(nota)) + '☆'.repeat(5 - Math.round(nota)); }
+  listaPlanos = [ { nome: 'Mensal', precoMensal: 39.90, desc: 'Destaque padrão.', destaque: false }, { nome: 'Trimestral', precoMensal: 34.90, desc: 'Visibilidade média.', destaque: false }, { nome: 'Semestral', precoMensal: 29.90, desc: 'Melhor custo.', destaque: true }, { nome: 'Anual', precoMensal: 19.90, desc: 'Maior desconto.', destaque: false } ]; mostrarModalCheckout = false; planoSelecionado: any = null; abrirCheckout(plano: any) { if (!this.usuarioLogado) return this.abrirModalLogin(); this.planoSelecionado = plano; this.mostrarModalCheckout = true; } fecharCheckout() { this.mostrarModalCheckout = false; } finalizarPagamento() { alert('Redirecionando...'); this.fecharCheckout(); } mostrarModalSobre = false; abrirSobre() { this.mostrarModalSobre = true; } fecharSobre() { this.mostrarModalSobre = false; }
 }
